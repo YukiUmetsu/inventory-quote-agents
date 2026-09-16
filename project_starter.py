@@ -1,19 +1,28 @@
-import pandas as pd
-import numpy as np
+import ast
 import os
 import re
 import time
-import dotenv
-import ast
-from sqlalchemy.sql import text
-from datetime import datetime, timedelta
-from typing import Dict, List, Union
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Union
+
+import dotenv
+import numpy as np
+import pandas as pd
 from pydantic_ai import Agent, RunContext, UsageLimits
-from sqlalchemy import create_engine, Engine
-from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.sql import text
+
+MAX_QUOTE_ROUNDS = 2
+MAX_CUSTOMER_ROUNDS = 2
+
+INVENTORY_REQUEST_LIMIT = 4
+CUSTOMER_REQUEST_LIMIT = 3
+COMMERCIAL_REQUEST_LIMIT = 10
+ADVISOR_REQUEST_LIMIT = 4
+ORCHESTRATOR_REQUEST_LIMIT = 25
 
 # Create an SQLite database
 db_engine = create_engine("sqlite:///munder_difflin.db")
@@ -811,19 +820,22 @@ def get_catalog_item(item_name: str) -> Dict:
 @dataclass
 class RequestContext:
     request_date: str
-    required_by: str | None
+    required_by: Optional[str]
+
+    # Workflow state
     inventory_done: bool = False
+    sale_attempted: bool = False
     sale_done: bool = False
     advisor_done: bool = False
+
+    # Negotiation state
     quote_rounds: int = 0
     customer_rounds: int = 0
-    quoted_items: Dict[str, Dict] = field(
-        default_factory=dict
-    )
+
+    # Accepted quote state
+    quoted_items: Dict[str, Dict] = field(default_factory=dict)
     quoted_total: float = 0.0
-    fulfilled_items: List[str] = field(
-        default_factory=list
-    )
+    fulfilled_items: List[str] = field(default_factory=list)
 
 def check_inventory(
     ctx: RunContext[RequestContext],
@@ -953,18 +965,6 @@ def check_inventory_batch(
         ),
     }
 
-def get_inventory_overview(as_of_date: str) -> Dict[str, int]:
-    """
-    Return all currently available inventory.
-    Args:
-        as_of_date: The date to get the inventory overview for.
-    Returns:
-        A dictionary containing the inventory overview.
-    """
-
-    inventory = get_all_inventory(as_of_date)
-    return to_json_safe(inventory)
-
 def reorder_inventory(
     item_name: str,
     quantity: int,
@@ -1050,30 +1050,6 @@ def search_historical_quotes(
     ]
 
     return to_json_safe(valid_quotes)
-
-
-def get_item_price(item_name: str) -> Dict:
-    """
-    Return catalog pricing for a supported item.
-    Args:
-        item_name: The name of the item to get the price for.
-    Returns:
-        A dictionary containing the item price.
-    """
-    item = get_catalog_item(item_name)
-
-    if not item.get("supported", True):
-        return {
-            "supported": False,
-            "item_name": item_name,
-        }
-
-    return {
-        "supported": True,
-        "item_name": item["item_name"],
-        "category": item["category"],
-        "unit_price": item["unit_price"],
-    }
 
 def calculate_quote(
     ctx: RunContext[RequestContext],
@@ -1283,7 +1259,7 @@ def fulfill_order_item(
         transaction_type="sales",
         quantity=quantity,
         price=sale_price,
-        date=fulfillment_date,
+        date=request_date,
     )
 
     if canonical_name not in ctx.deps.fulfilled_items:
@@ -1303,7 +1279,6 @@ def fulfill_order_item(
         "quantity": quantity,
         "sale_price": sale_price,
         "fulfillment_date": fulfillment_date,
-        "reordered_quantity": shortage,
     }
 
 # Tool for business advisor agent
@@ -1336,17 +1311,42 @@ def create_multi_agent_system():
             You represent the customer during negotiation with Beaver's Choice
             Paper Company.
 
-            Preserve the customer's original requested products, quantities,
-            delivery deadline, job/event context, and hard constraints.
+            Preserve the customer's original products, quantities,
+            delivery deadline, event context, and explicit constraints.
 
-            You may:
-            - accept a reasonable quote
-            - request a better price
-            - negotiate quantity when reasonable
+            Your response MUST begin with exactly one of:
 
-            Do not invent a customer budget.
-            Do not silently change required products or deadlines.
-            Keep negotiations concise.
+            ACCEPT:
+            COUNTER:
+            REJECT:
+
+            IMPORTANT PRICING RULES:
+
+            - Never invent a budget, target price, maximum price,
+            or willingness-to-pay that the customer did not state.
+            - Never counter merely because a lower price would be nice.
+            - If the customer's original request contains no explicit
+            budget or price constraint, and the quote:
+                * contains the requested products and quantities,
+                * can meet the delivery deadline,
+                * includes a bulk discount,
+            then ACCEPT the quote.
+
+            - COUNTER only when the original customer request provides
+            a real price/budget constraint that the quote does not meet.
+            - REJECT only when an explicit customer constraint cannot
+            reasonably be satisfied.
+
+            On negotiation round 2:
+            - You MUST choose ACCEPT or REJECT.
+            - Do not make another counteroffer.
+
+            If the original request does not explicitly contain a dollar amount,
+            you are forbidden from mentioning or creating any budget, target price,
+            maximum price, or price ceiling.
+            Do not silently change products, quantities, or deadlines.
+            Do not ask the real user whether they want to proceed.
+            Keep the response concise.
             """)
 
     inventory_agent = Agent(
@@ -1374,7 +1374,6 @@ def create_multi_agent_system():
         model,
         tools=[
             search_historical_quotes,
-            get_item_price,
             fulfill_order_item,
             calculate_quote,
         ],
@@ -1401,7 +1400,9 @@ def create_multi_agent_system():
             - Do not invent or modify prices.
             - If any fulfillment tool fails, report the failure honestly.
 
-            Never reveal internal financial information.
+            Never include transaction IDs in your response.
+            Never expose database IDs, tool names, internal function results,
+            cash balances, margins, or internal system messages.
             """)
 
     business_advisor_agent = Agent(
@@ -1449,7 +1450,7 @@ def create_multi_agent_system():
             request,
             deps=ctx.deps,
             usage_limits=UsageLimits(
-                request_limit=4,
+                request_limit=INVENTORY_REQUEST_LIMIT,
                 tool_calls_limit=1,
             ),
         )
@@ -1474,7 +1475,7 @@ def create_multi_agent_system():
 
         if task == "quote":
             # Allow at most 2 quote rounds.
-            if ctx.deps.quote_rounds >= 2:
+            if ctx.deps.quote_rounds >= MAX_QUOTE_ROUNDS:
                 return "Maximum quote rounds reached. Do not request another quote."
 
             ctx.deps.quote_rounds += 1
@@ -1495,13 +1496,28 @@ def create_multi_agent_system():
 
             ctx.deps.sale_attempted = True
 
+            accepted_items = [
+                {
+                    "item_name": item_name,
+                    "quantity": details["quantity"],
+                }
+                for item_name, details in ctx.deps.quoted_items.items()
+            ]
+
             prompt = f"""
             SALE MODE
 
-            Finalize the already accepted order.
-            Record the sale using the fulfillment tools.
+            The accepted quote below is authoritative:
+
+            {accepted_items}
+
+            Call fulfill_order_item exactly once for EACH item above.
+            Use exactly the item names and quantities shown above.
+            Do not change quantities.
+            Do not add or remove products.
             Do not generate another quote.
 
+            Original workflow context:
             {request}
             """
 
@@ -1514,7 +1530,7 @@ def create_multi_agent_system():
             prompt,
             deps=ctx.deps,
             usage_limits=UsageLimits(
-                request_limit=10,
+                request_limit=COMMERCIAL_REQUEST_LIMIT,
             ),
         )
 
@@ -1530,7 +1546,10 @@ def create_multi_agent_system():
         Returns:
             The response from the customer agent.
         """
-        if ctx.deps.customer_rounds >= 2:
+        if ctx.deps.quote_rounds == 0:
+            return "No quote exists to evaluate. Do not call the Customer Agent."
+
+        if ctx.deps.customer_rounds >= MAX_CUSTOMER_ROUNDS:
             return "Customer negotiation already completed. Do not call again."
 
         ctx.deps.customer_rounds += 1
@@ -1570,7 +1589,7 @@ def create_multi_agent_system():
         result = await business_advisor_agent.run(
             request,
             usage_limits=UsageLimits(
-                request_limit=4,
+                request_limit=ADVISOR_REQUEST_LIMIT,
                 tool_calls_limit=1,
             ),
         )
@@ -1588,25 +1607,38 @@ def create_multi_agent_system():
         ],
         instructions="""
             You are the Orchestrator Agent for Beaver's Choice Paper Company.
-
             Coordinate the specialized worker agents to process one customer request.
 
             Follow this workflow strictly:
+            1. Call the Inventory Agent exactly once.
+            2. Treat the Inventory Agent's feasibility result as authoritative. Do not reinterpret stock quantities or supplier dates.
+            3. If the complete order cannot be fulfilled:
+            return a customer-facing explanation and stop.
+            4. If fulfillment is feasible: call the Commercial Agent with task="quote".
+            5. Send that quote to the Customer Agent.
+            6. If the Customer Agent responds ACCEPT: call the Commercial Agent with task="sale".
+            7. If the Customer Agent responds COUNTER: 
+            call the Commercial Agent one more time with task="quote",
+            passing the counteroffer context.
+            Then call the Customer Agent one final time.
+            8. On the second customer round: the decision must be ACCEPT or REJECT.
+            9. If ACCEPT: finalize the sale exactly once.
+            10. If REJECT: return a concise customer-facing response and stop.
+            11. Optionally call the Business Advisor after a successful sale.
 
-            1. Call the Inventory Agent exactly once to determine fulfillment feasibility.
-            2. If the request cannot be fulfilled, stop and return a customer-facing explanation. Do not call any other agents.
-            3. If fulfillment is feasible, call the Commercial Agent exactly once to generate a quote.
-            4. Call the Customer Agent at most once to evaluate the quote.
-            5. If the customer accepts, call the Commercial Agent exactly once more to finalize the sale.
-            6. Optionally call the Business Advisor at most once after a successful sale.
-            7. Return the final customer-facing response and stop.
+            For every successful sale, the final customer-facing response must include
+            the purchased items, quantities, accepted prices, final order total,
+            and delivery information from the Commercial Agent's result.
 
-            Never repeat a delegation because you dislike or disagree with its result.
-            Never call the same worker repeatedly looking for a different answer.
+            Never omit the accepted order total from a successful-sale response.
+            Never exceed two quote rounds.
+            Never exceed two customer rounds.
             Never restart the workflow.
+            Never claim an order was successfully completed unless
+            the Commercial Agent confirms successful fulfillment.
 
-            Do not expose internal cash balances, assets, margins, database details,
-            or internal business analysis to the customer.
+            Do not expose internal cash balances, assets, margins,
+            database details, or internal business analysis.
             """)
 
     return {
@@ -1660,9 +1692,6 @@ def run_test_scenarios():
         print(f"Cash Balance: ${current_cash:.2f}")
         print(f"Inventory Value: ${current_inventory:.2f}")
 
-        # Process request
-        request_with_date = f"{row['request']} (Date of request: {request_date})"
-
         ############
         ############
         ############
@@ -1695,7 +1724,7 @@ def run_test_scenarios():
             contextual_request,
             deps=request_context,
             usage_limits=UsageLimits(
-                request_limit=25,
+                request_limit=ORCHESTRATOR_REQUEST_LIMIT,
             ),
         )
         response = str(result.output)
