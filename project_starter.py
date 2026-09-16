@@ -8,14 +8,12 @@ import ast
 from sqlalchemy.sql import text
 from datetime import datetime, timedelta
 from typing import Dict, List, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pydantic_ai import Agent, RunContext, UsageLimits
 from sqlalchemy import create_engine, Engine
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
-from pydantic import BaseModel, Field
-
 
 # Create an SQLite database
 db_engine = create_engine("sqlite:///munder_difflin.db")
@@ -819,6 +817,13 @@ class RequestContext:
     advisor_done: bool = False
     quote_rounds: int = 0
     customer_rounds: int = 0
+    quoted_items: Dict[str, Dict] = field(
+        default_factory=dict
+    )
+    quoted_total: float = 0.0
+    fulfilled_items: List[str] = field(
+        default_factory=list
+    )
 
 def check_inventory(
     ctx: RunContext[RequestContext],
@@ -877,7 +882,11 @@ def check_inventory(
     cash_balance = get_cash_balance(request_date)
 
     can_afford = cash_balance >= reorder_cost
-    arrives_on_time = supplier_delivery_date <= required_by
+    arrives_on_time = (
+        True
+        if required_by is None
+        else supplier_delivery_date <= required_by
+    )
 
     if not arrives_on_time:
         reason = (
@@ -1004,7 +1013,7 @@ def reorder_inventory(
         transaction_type="stock_orders",
         quantity=quantity,
         price=cost,
-        date=arrival_date,
+        date=order_date,
     )
 
     return {
@@ -1066,12 +1075,133 @@ def get_item_price(item_name: str) -> Dict:
         "unit_price": item["unit_price"],
     }
 
+def calculate_quote(
+    ctx: RunContext[RequestContext],
+    items: List[Dict],
+    search_terms: List[str],
+) -> Dict:
+    """
+    Calculate a quote from catalog prices, apply a deterministic
+    bulk discount, and consult historical quotes when available.
+    Args:
+        ctx: The context of the request.
+        items: The items to quote.
+        search_terms: The terms to search for in the quote history.
+    Returns:
+        A dictionary containing the quote information.
+    """
+
+    quote_items = []
+    subtotal = 0.0
+    total_quantity = 0
+
+    for requested_item in items:
+        item = get_catalog_item(requested_item["item_name"])
+
+        if not item.get("supported", True):
+            return {
+                "success": False,
+                "reason": f"Unsupported item: {requested_item['item_name']}",
+            }
+
+        quantity = int(requested_item["quantity"])
+        line_subtotal = round(
+            item["unit_price"] * quantity,
+            2,
+        )
+
+        quote_items.append(
+            {
+                "item_name": item["item_name"],
+                "quantity": quantity,
+                "unit_price": item["unit_price"],
+                "line_subtotal": line_subtotal,
+            }
+        )
+
+        subtotal += line_subtotal
+        total_quantity += quantity
+
+    # Explicit bulk-discount policy.
+    if total_quantity >= 1000:
+        discount_rate = 0.10
+    elif total_quantity >= 500:
+        discount_rate = 0.07
+    elif total_quantity >= 100:
+        discount_rate = 0.05
+    else:
+        discount_rate = 0.0
+
+    subtotal = round(subtotal, 2)
+    discount_amount = round(
+        subtotal * discount_rate,
+        2,
+    )
+    total = round(
+        subtotal - discount_amount,
+        2,
+    )
+
+    # Search one broad term at a time because the starter
+    # search_quote_history combines multiple terms with AND.
+    historical_quotes = []
+
+    for term in search_terms[:3]:
+        historical_quotes = search_historical_quotes(
+            [term],
+            limit=3,
+        )
+
+        if historical_quotes:
+            break
+
+    # Allocate the same discount across individual line items.
+    running_total = 0.0
+
+    for index, quote_item in enumerate(quote_items):
+        if index == len(quote_items) - 1:
+            line_total = round(
+                total - running_total,
+                2,
+            )
+        else:
+            line_total = round(
+                quote_item["line_subtotal"] * (1 - discount_rate),
+                2,
+            )
+            running_total += line_total
+
+        quote_item["line_total"] = line_total
+
+    # Save the authoritative quote for sale finalization.
+    ctx.deps.quoted_items = {
+        item["item_name"]: {
+            "quantity": item["quantity"],
+            "sale_price": item["line_total"],
+        }
+        for item in quote_items
+    }
+
+    ctx.deps.quoted_total = total
+    ctx.deps.fulfilled_items = []
+
+    return {
+        "success": True,
+        "items": quote_items,
+        "subtotal": subtotal,
+        "total_quantity": total_quantity,
+        "bulk_discount_rate": discount_rate,
+        "discount_amount": discount_amount,
+        "total": total,
+        "historical_quotes_found": len(historical_quotes),
+        "historical_quotes": historical_quotes,
+    }
+
 # Tools for ordering agent
 def fulfill_order_item(
     ctx: RunContext[RequestContext],
     item_name: str,
     quantity: int,
-    sale_price: float,
 ) -> Dict:
     """
     Finalize the sale of one item only if sufficient inventory exists.
@@ -1079,7 +1209,6 @@ def fulfill_order_item(
         ctx: The context of the request.
         item_name: The name of the item to fulfill.
         quantity: The quantity of the item to fulfill.
-        sale_price: The price of the item to fulfill.
     Returns:
         A dictionary containing the fulfillment information.
     """
@@ -1092,6 +1221,24 @@ def fulfill_order_item(
         }
 
     canonical_name = item["item_name"]
+    quoted_item = ctx.deps.quoted_items.get(canonical_name)
+
+    if quoted_item is None:
+        return {
+            "success": False,
+            "reason": "This item is not part of the accepted quote.",
+        }
+
+    if quantity != quoted_item["quantity"]:
+        return {
+            "success": False,
+            "reason": "Quantity does not match the accepted quote.",
+        }
+
+    sale_price = float(
+        quoted_item["sale_price"]
+    )
+
     request_date = ctx.deps.request_date
     required_by = ctx.deps.required_by
 
@@ -1137,6 +1284,16 @@ def fulfill_order_item(
         quantity=quantity,
         price=sale_price,
         date=fulfillment_date,
+    )
+
+    if canonical_name not in ctx.deps.fulfilled_items:
+        ctx.deps.fulfilled_items.append(
+            canonical_name
+        )
+
+    ctx.deps.sale_done = (
+        len(ctx.deps.fulfilled_items)
+        == len(ctx.deps.quoted_items)
     )
 
     return {
@@ -1219,24 +1376,32 @@ def create_multi_agent_system():
             search_historical_quotes,
             get_item_price,
             fulfill_order_item,
+            calculate_quote,
         ],
         instructions="""
             You are the Commercial Agent.
+            You have two separate modes.
+            QUOTE MODE:
+            - Call calculate_quote exactly once.
+            - Include every requested item and quantity.
+            - Use broad customer context such as job, event, or product
+            category as historical search terms.
+            - Use the returned price exactly.
+            - Clearly report:
+                subtotal,
+                bulk discount percentage,
+                discount amount,
+                final total.
+            - Do not calculate your own alternative price.
+            - Do not create transactions.
+            SALE MODE:
+            - Finalize only an accepted quote.
+            - Call fulfill_order_item once for every quoted item.
+            - Use the exact quoted quantities.
+            - Do not invent or modify prices.
+            - If any fulfillment tool fails, report the failure honestly.
 
-            You have two clearly separated responsibilities.
-
-            QUOTE:
-            - use catalog prices
-            - consult historical quotes when useful
-            - apply reasonable bulk discounts
-            - explain pricing clearly
-
-            SALE:
-            - finalize an accepted order only after fulfillment is feasible
-            - record successful sales through the fulfillment tool
-            - never sell unavailable stock
-
-            Never reveal internal company financial information.
+            Never reveal internal financial information.
             """)
 
     business_advisor_agent = Agent(
@@ -1325,10 +1490,10 @@ def create_multi_agent_system():
             """
 
         elif task == "sale":
-            if ctx.deps.sale_done:
+            if ctx.deps.sale_attempted:
                 return "Sale finalization already attempted. Do not call again."
 
-            ctx.deps.sale_done = True
+            ctx.deps.sale_attempted = True
 
             prompt = f"""
             SALE MODE
@@ -1372,8 +1537,14 @@ def create_multi_agent_system():
 
         print("[ORCHESTRATOR] -> Customer Agent")
 
+        prompt = f"""
+        Negotiation round: {ctx.deps.customer_rounds}
+
+        {request}
+        """
+
         result = await customer_agent.run(
-            request,
+            prompt,
             usage_limits=UsageLimits(request_limit=3),
         )
 
@@ -1517,6 +1688,9 @@ def run_test_scenarios():
             required_by=required_by,
         )
 
+        # Save cash before processing this request.
+        cash_before = current_cash
+
         result = orchestrator_agent.run_sync(
             contextual_request,
             deps=request_context,
@@ -1536,6 +1710,9 @@ def run_test_scenarios():
         current_cash = report["cash_balance"]
         current_inventory = report["inventory_value"]
 
+        cash_after = current_cash
+        cash_change = cash_after - cash_before
+
         print(f"Response: {response}")
         print(f"Updated Cash: ${current_cash:.2f}")
         print(f"Updated Inventory: ${current_inventory:.2f}")
@@ -1545,7 +1722,13 @@ def run_test_scenarios():
                 "request_id": idx + 1,
                 "request_date": request_date,
                 "cash_balance": current_cash,
+                "cash_before": round(cash_before, 2),
+                "cash_after": round(cash_after, 2),
+                "cash_change": round(cash_change, 2),
                 "inventory_value": current_inventory,
+                "fulfilled": request_context.sale_done,
+                "quote_rounds": request_context.quote_rounds,
+                "customer_rounds": request_context.customer_rounds,
                 "response": response,
             }
         )
