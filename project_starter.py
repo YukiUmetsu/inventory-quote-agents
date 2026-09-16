@@ -1,13 +1,21 @@
 import pandas as pd
 import numpy as np
 import os
+import re
 import time
 import dotenv
 import ast
 from sqlalchemy.sql import text
 from datetime import datetime, timedelta
 from typing import Dict, List, Union
+from dataclasses import dataclass
+from pydantic_ai import Agent, RunContext, UsageLimits
 from sqlalchemy import create_engine, Engine
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic import BaseModel, Field
+
 
 # Create an SQLite database
 db_engine = create_engine("sqlite:///munder_difflin.db")
@@ -590,30 +598,860 @@ def search_quote_history(search_terms: List[str], limit: int = 5) -> List[Dict]:
 
 
 # Set up and load your env parameters and instantiate your model.
+dotenv.load_dotenv()
+api_key = os.getenv("UDACITY_OPENAI_API_KEY")
 
+if not api_key:
+    raise ValueError(
+        "UDACITY_OPENAI_API_KEY is missing. Add it to your .env file."
+    )
+
+model_name = os.getenv(
+    "UDACITY_OPENAI_MODEL",
+    "gpt-4o-mini",
+)
+
+provider = OpenAIProvider(
+    base_url="https://openai.vocareum.com/v1",
+    api_key=api_key,
+)
+
+model = OpenAIChatModel(
+    model_name,
+    provider=provider,
+)
 
 """Set up tools for your agents to use, these should be methods that combine the database functions above
  and apply criteria to them to ensure that the flow of the system is correct."""
 
+def extract_required_by(request: str) -> str | None:
+    """
+    Extract an explicit customer delivery deadline.
+
+    Args:
+        request: The customer request to extract the delivery deadline from.
+
+    Returns:
+        The delivery deadline in ISO format (YYYY-MM-DD).
+    """
+    match = re.search(
+        r"(January|February|March|April|May|June|July|August|"
+        r"September|October|November|December)\s+\d{1,2},\s+\d{4}",
+        request,
+        re.IGNORECASE,
+    )
+
+    if not match:
+        return None
+
+    return datetime.strptime(
+        match.group(0),
+        "%B %d, %Y",
+    ).strftime("%Y-%m-%d")
+
+def to_json_safe(value):
+    """
+    Convert NumPy/Pandas values into JSON-serializable Python values.
+    Args:
+        value: The value to convert.
+    Returns:
+        The JSON-serializable value.
+    """
+
+    if isinstance(value, np.generic):
+        return value.item()
+
+    if isinstance(value, pd.Timestamp):
+        return value.isoformat()
+
+    if isinstance(value, dict):
+        return {
+            key: to_json_safe(val)
+            for key, val in value.items()
+        }
+
+    if isinstance(value, list):
+        return [
+            to_json_safe(item)
+            for item in value
+        ]
+
+    if isinstance(value, tuple):
+        return [
+            to_json_safe(item)
+            for item in value
+        ]
+
+    return value
+
+def normalize_item_name(item_name: str) -> str | None:
+    """
+    Map customer wording to canonical catalog item names.
+
+    Args:
+        item_name: The name of the item to normalize.
+
+    Returns:
+        The normalized item name.
+    """
+
+    name = item_name.lower().strip()
+
+    # Exact match first.
+    for item in paper_supplies:
+        if item["item_name"].lower() == name:
+            return item["item_name"]
+
+    # Important specialty matches first.
+    if "washi" in name:
+        return "Decorative adhesive tape (washi tape)"
+
+    if "250 gsm" in name and "cardstock" in name:
+        return "250 gsm cardstock"
+
+    if "220 gsm" in name and "poster" in name:
+        return "220 gsm poster paper"
+
+    if "100 lb" in name and ("cover" in name or "cardstock" in name):
+        return "100 lb cover stock"
+
+    if "24x36" in name or "24 x 36" in name or "poster board" in name:
+        return "Large poster paper (24x36 inches)"
+
+    # Reject unsupported paper sizes rather than pretending they are A4.
+    if "a3" in name or "a5" in name:
+        return None
+
+    # General paper aliases.
+    if "glossy" in name:
+        return "Glossy paper"
+
+    if "matte" in name:
+        return "Matte paper"
+
+    if "construction" in name:
+        return "Construction paper"
+
+    if "recycled" in name and "paper" in name:
+        return "Recycled paper"
+
+    if "cardstock" in name:
+        return "Cardstock"
+
+    if "colored" in name or "colourful" in name or "colorful" in name:
+        return "Colored paper"
+
+    if "printer paper" in name or "printing paper" in name:
+        if "a4" in name:
+            return "A4 paper"
+        return "Standard copy paper"
+
+    if "a4" in name and "paper" in name:
+        return "A4 paper"
+
+    if "streamer" in name:
+        return "Party streamers"
+
+    if "napkin" in name:
+        return "Paper napkins"
+
+    if "paper plate" in name:
+        return "Paper plates"
+
+    if "paper cup" in name:
+        return "Paper cups"
+
+    if "flyer" in name:
+        return "Flyers"
+
+    if "envelope" in name:
+        return "Envelopes"
+
+    if "poster" in name:
+        return "Poster paper"
+
+    return None
 
 # Tools for inventory agent
+def get_catalog_item(item_name: str) -> Dict:
+    """
+    Look up an exact canonical item from the company product catalog.
 
+    Agents should use canonical item names before inventory or
+    transaction operations.
+
+    Args:
+        item_name: The name of the item to look up.
+
+    Returns:
+        A dictionary containing the catalog item information.
+    """
+    canonical_name = normalize_item_name(item_name)
+    for item in paper_supplies:
+        if item["item_name"].lower() == item_name.lower():
+            return item
+
+    if canonical_name is None:
+        return {
+            "supported": False,
+            "original_name": item_name,
+        }
+
+    for item in paper_supplies:
+        if item["item_name"] == canonical_name:
+            return {
+                **item,
+                "supported": True,
+                "original_name": item_name,
+            }
+
+    return {
+        "supported": False,
+        "original_name": item_name,
+    }
+
+@dataclass
+class RequestContext:
+    request_date: str
+    required_by: str | None
+    inventory_done: bool = False
+    sale_done: bool = False
+    advisor_done: bool = False
+    quote_rounds: int = 0
+    customer_rounds: int = 0
+
+def check_inventory(
+    ctx: RunContext[RequestContext],
+    item_name: str,
+    quantity: int,
+) -> Dict:
+    """
+    Check current inventory and determine whether a shortage can be
+    replenished before the customer's deadline.
+
+    Args:
+        ctx: The context of the request.
+        item_name: The name of the item to check.
+        quantity: The quantity of the item to check.
+
+    Returns:
+        A dictionary containing the inventory information.
+    """
+    item = get_catalog_item(item_name)
+
+    if not item.get("supported", True):
+        return {
+            "item_name": item_name,
+            "supported": False,
+            "fulfillable": False,
+            "reason": "The requested item is not in our product catalog.",
+        }
+    request_date = ctx.deps.request_date
+    required_by = ctx.deps.required_by
+
+    canonical_name = item["item_name"]
+    stock_df = get_stock_level(canonical_name, request_date)
+    current_stock = int(stock_df["current_stock"].iloc[0])
+
+    shortage = max(0, quantity - current_stock)
+
+    if shortage == 0:
+        return {
+            "original_item_name": item_name,
+            "item_name": canonical_name,
+            "supported": True,
+            "current_stock": current_stock,
+            "requested_quantity": quantity,
+            "shortage": 0,
+            "reorder_required": False,
+            "fulfillable": True,
+            "reason": "Enough inventory is currently available.",
+        }
+
+    supplier_delivery_date = get_supplier_delivery_date(
+        request_date,
+        shortage,
+    )
+
+    reorder_cost = shortage * item["unit_price"]
+    cash_balance = get_cash_balance(request_date)
+
+    can_afford = cash_balance >= reorder_cost
+    arrives_on_time = supplier_delivery_date <= required_by
+
+    if not arrives_on_time:
+        reason = (
+            "The required additional stock cannot arrive before "
+            "the requested delivery date."
+        )
+    elif not can_afford:
+        reason = "The required inventory replenishment cannot be funded."
+    else:
+        reason = (
+            "Current inventory is insufficient, but the shortage "
+            "can be replenished in time."
+        )
+
+    return {
+        "original_item_name": item_name,
+        "item_name": canonical_name,
+        "supported": True,
+        "current_stock": current_stock,
+        "requested_quantity": quantity,
+        "shortage": shortage,
+        "reorder_required": True,
+        "supplier_delivery_date": supplier_delivery_date,
+        "reorder_cost": reorder_cost,
+        "can_afford_reorder": can_afford,
+        "arrives_on_time": arrives_on_time,
+        "fulfillable": can_afford and arrives_on_time,
+        "reason": reason,
+    }
+
+def check_inventory_batch(
+    ctx: RunContext[RequestContext],
+    items: List[Dict],
+) -> Dict:
+    """
+    Check inventory feasibility for all requested items in one tool call.
+
+    Each item must contain:
+    - item_name
+    - quantity
+
+    Args:
+        ctx: The context of the request.
+        items: A list of dictionaries containing the items to check.
+
+    Returns:
+        A dictionary containing the inventory feasibility results.
+    """
+    results = []
+
+    for item in items:
+        result = check_inventory(
+            ctx,
+            item_name=item["item_name"],
+            quantity=int(item["quantity"]),
+        )
+        results.append(result)
+
+    return {
+        "items": to_json_safe(results),
+        "all_fulfillable": all(
+            item.get("fulfillable", False)
+            for item in results
+        ),
+    }
+
+def get_inventory_overview(as_of_date: str) -> Dict[str, int]:
+    """
+    Return all currently available inventory.
+    Args:
+        as_of_date: The date to get the inventory overview for.
+    Returns:
+        A dictionary containing the inventory overview.
+    """
+
+    inventory = get_all_inventory(as_of_date)
+    return to_json_safe(inventory)
+
+def reorder_inventory(
+    item_name: str,
+    quantity: int,
+    order_date: str,
+) -> Dict:
+    """
+    Replenish inventory when enough cash is available.
+    The stock transaction is dated when the supplier delivers it.
+    Args:
+        item_name: The name of the item to reorder.
+        quantity: The quantity of the item to reorder.
+        order_date: The date to order the item.
+    Returns:
+        A dictionary containing the reorder information.
+    """
+    item = get_catalog_item(item_name)
+
+    if not item.get("supported", True):
+        return {
+            "success": False,
+            "reason": "Unsupported catalog item.",
+        }
+
+    if quantity <= 0:
+        return {
+            "success": False,
+            "reason": "Quantity must be positive.",
+        }
+
+    cost = quantity * item["unit_price"]
+    cash_balance = get_cash_balance(order_date)
+
+    if cost > cash_balance:
+        return {
+            "success": False,
+            "reason": "Insufficient cash for replenishment.",
+        }
+
+    arrival_date = get_supplier_delivery_date(
+        order_date,
+        quantity,
+    )
+
+    transaction_id = create_transaction(
+        item_name=item_name,
+        transaction_type="stock_orders",
+        quantity=quantity,
+        price=cost,
+        date=arrival_date,
+    )
+
+    return {
+        "success": True,
+        "transaction_id": transaction_id,
+        "item_name": item_name,
+        "quantity": quantity,
+        "arrival_date": arrival_date,
+    }
 
 # Tools for quoting agent
+def search_historical_quotes(
+    search_terms: List[str],
+    limit: int = 5,
+) -> List[Dict]:
+    """
+    Search historical quotes and remove obviously invalid quote records.
+    Args:
+        search_terms: The terms to search for in the quote history.
+        limit: The maximum number of quotes to return.
+    Returns:
+        A list of dictionaries containing the historical quotes.
+    """
+    quotes = search_quote_history(
+        search_terms=search_terms,
+        limit=limit,
+    )
 
+    valid_quotes = [
+        quote
+        for quote in quotes
+        if quote.get("total_amount") is not None
+        and quote["total_amount"] > 0
+    ]
+
+    return to_json_safe(valid_quotes)
+
+
+def get_item_price(item_name: str) -> Dict:
+    """
+    Return catalog pricing for a supported item.
+    Args:
+        item_name: The name of the item to get the price for.
+    Returns:
+        A dictionary containing the item price.
+    """
+    item = get_catalog_item(item_name)
+
+    if not item.get("supported", True):
+        return {
+            "supported": False,
+            "item_name": item_name,
+        }
+
+    return {
+        "supported": True,
+        "item_name": item["item_name"],
+        "category": item["category"],
+        "unit_price": item["unit_price"],
+    }
 
 # Tools for ordering agent
+def fulfill_order_item(
+    ctx: RunContext[RequestContext],
+    item_name: str,
+    quantity: int,
+    sale_price: float,
+) -> Dict:
+    """
+    Finalize the sale of one item only if sufficient inventory exists.
+    Args:
+        ctx: The context of the request.
+        item_name: The name of the item to fulfill.
+        quantity: The quantity of the item to fulfill.
+        sale_price: The price of the item to fulfill.
+    Returns:
+        A dictionary containing the fulfillment information.
+    """
+    item = get_catalog_item(item_name)
 
+    if not item.get("supported", True):
+        return {
+            "success": False,
+            "reason": "Unsupported catalog item.",
+        }
+
+    canonical_name = item["item_name"]
+    request_date = ctx.deps.request_date
+    required_by = ctx.deps.required_by
+
+    stock_df = get_stock_level(
+        canonical_name,
+        request_date,
+    )
+
+    current_stock = int(
+        stock_df["current_stock"].iloc[0]
+    )
+
+    shortage = max(0, quantity - current_stock)
+    fulfillment_date = request_date
+
+    # Replenish shortage when it can arrive before the deadline.
+    if shortage > 0:
+        delivery_date = get_supplier_delivery_date(
+            request_date,
+            shortage,
+        )
+
+        if required_by and delivery_date > required_by:
+            return {
+                "success": False,
+                "reason": "Required stock cannot arrive before the deadline.",
+            }
+
+        reorder_result = reorder_inventory(
+            canonical_name,
+            shortage,
+            request_date,
+        )
+
+        if not reorder_result["success"]:
+            return reorder_result
+
+        fulfillment_date = delivery_date
+
+    transaction_id = create_transaction(
+        item_name=canonical_name,
+        transaction_type="sales",
+        quantity=quantity,
+        price=sale_price,
+        date=fulfillment_date,
+    )
+
+    return {
+        "success": True,
+        "transaction_id": transaction_id,
+        "item_name": canonical_name,
+        "quantity": quantity,
+        "sale_price": sale_price,
+        "fulfillment_date": fulfillment_date,
+        "reordered_quantity": shortage,
+    }
+
+# Tool for business advisor agent
+def get_business_health(as_of_date: str) -> Dict:
+    """
+    Return internal financial and inventory information
+    for business analysis.
+    Args:
+        as_of_date: The date to get the business health for.
+    Returns:
+        A dictionary containing the business health.
+    """
+    business_health = {
+        "financial_report": generate_financial_report(as_of_date),
+        "cash_balance": get_cash_balance(as_of_date),
+        "inventory": get_all_inventory(as_of_date),
+    }
+
+    return to_json_safe(business_health)
 
 # Set up your agents and create an orchestration agent that will manage them.
+def create_multi_agent_system():
+    """
+    Set up the agents and create an orchestration agent that will manage them.
+    """
 
+    customer_agent = Agent(
+        model,
+        instructions="""
+            You represent the customer during negotiation with Beaver's Choice
+            Paper Company.
+
+            Preserve the customer's original requested products, quantities,
+            delivery deadline, job/event context, and hard constraints.
+
+            You may:
+            - accept a reasonable quote
+            - request a better price
+            - negotiate quantity when reasonable
+
+            Do not invent a customer budget.
+            Do not silently change required products or deadlines.
+            Keep negotiations concise.
+            """)
+
+    inventory_agent = Agent(
+        model,
+        deps_type=RequestContext,
+        tools=[
+            check_inventory_batch,
+        ],
+        instructions="""
+            You are the Inventory and Procurement Agent.
+            Extract every distinct requested product and its quantity from the request.
+            Then:
+
+            1. Call check_inventory_batch exactly once with all requested items.
+            2. Use the returned results to determine fulfillment feasibility.
+            3. Return a concise inventory assessment immediately.
+            4. Do not call another tool after check_inventory_batch.
+            5. Do not repeat the inventory assessment.
+
+            Do not purchase inventory.
+            Do not create transactions.
+            Do not invent stock quantities, supplier dates, or financial data.""")
+
+    commercial_agent = Agent(
+        model,
+        tools=[
+            search_historical_quotes,
+            get_item_price,
+            fulfill_order_item,
+        ],
+        instructions="""
+            You are the Commercial Agent.
+
+            You have two clearly separated responsibilities.
+
+            QUOTE:
+            - use catalog prices
+            - consult historical quotes when useful
+            - apply reasonable bulk discounts
+            - explain pricing clearly
+
+            SALE:
+            - finalize an accepted order only after fulfillment is feasible
+            - record successful sales through the fulfillment tool
+            - never sell unavailable stock
+
+            Never reveal internal company financial information.
+            """)
+
+    business_advisor_agent = Agent(
+        model,
+        tools=[
+            get_business_health,
+        ],
+        instructions="""
+            You are the internal Business Advisor.
+
+            Analyze transactions, inventory, cash, and financial reports.
+
+            Recommend improvements related to:
+            - inventory efficiency
+            - recurring shortages
+            - purchasing
+            - pricing
+            - revenue
+
+            Your analysis is internal.
+            Do not expose confidential financial information to customers.
+            Do not execute purchases or sales yourself.
+            """)
+
+    async def delegate_inventory(
+        ctx: RunContext[RequestContext],
+        request: str,
+    ) -> str:
+        """
+        Delegate inventory assessment work.
+        Args:
+            ctx: The context of the request.
+            request: The request to evaluate or negotiate.
+        Returns:
+            The response from the inventory agent.
+        """
+        if ctx.deps.inventory_done:
+            return "Inventory assessment already completed. Do not call this agent again."
+
+        ctx.deps.inventory_done = True
+
+        print("[ORCHESTRATOR] -> Inventory Agent")
+
+        result = await inventory_agent.run(
+            request,
+            deps=ctx.deps,
+            usage_limits=UsageLimits(
+                request_limit=4,
+                tool_calls_limit=1,
+            ),
+        )
+
+        return str(result.output)
+
+
+    async def delegate_commercial(
+        ctx: RunContext[RequestContext],
+        request: str,
+        task: str,
+    ) -> str:
+        """
+        Delegate quotation or sales work.
+        Args:
+            ctx: The context of the request.
+            request: The request to evaluate or negotiate.
+        Returns:
+            The response from the commercial agent.
+        """
+        task = task.lower().strip()
+
+        if task == "quote":
+            # Allow at most 2 quote rounds.
+            if ctx.deps.quote_rounds >= 2:
+                return "Maximum quote rounds reached. Do not request another quote."
+
+            ctx.deps.quote_rounds += 1
+
+            prompt = f"""
+            QUOTE MODE
+            Quote round: {ctx.deps.quote_rounds}
+
+            Generate or revise the quote only.
+            Do not finalize or record a sale.
+
+            {request}
+            """
+
+        elif task == "sale":
+            if ctx.deps.sale_done:
+                return "Sale finalization already attempted. Do not call again."
+
+            ctx.deps.sale_done = True
+
+            prompt = f"""
+            SALE MODE
+
+            Finalize the already accepted order.
+            Record the sale using the fulfillment tools.
+            Do not generate another quote.
+
+            {request}
+            """
+
+        else:
+            return "Invalid task. Use 'quote' or 'sale'."
+
+        print(f"[ORCHESTRATOR] -> Commercial Agent ({task})")
+
+        result = await commercial_agent.run(
+            prompt,
+            deps=ctx.deps,
+            usage_limits=UsageLimits(
+                request_limit=10,
+            ),
+        )
+
+        return str(result.output)
+
+
+    async def delegate_customer(ctx: RunContext[RequestContext], request: str) -> str:
+        """
+        Ask the customer agent to evaluate or negotiate an offer.
+        Args:
+            ctx: The context of the request.
+            request: The request to evaluate or negotiate.
+        Returns:
+            The response from the customer agent.
+        """
+        if ctx.deps.customer_rounds >= 2:
+            return "Customer negotiation already completed. Do not call again."
+
+        ctx.deps.customer_rounds += 1
+
+        print("[ORCHESTRATOR] -> Customer Agent")
+
+        result = await customer_agent.run(
+            request,
+            usage_limits=UsageLimits(request_limit=3),
+        )
+
+        return str(result.output)
+
+
+    async def delegate_business_analysis(ctx: RunContext[RequestContext], request: str) -> str:
+        """
+        Delegate internal business analysis.
+        Args:
+            ctx: The context of the request.
+            request: The request to evaluate or negotiate.
+        Returns:
+            The response from the business advisor agent.
+        """
+        if ctx.deps.advisor_done:
+            return "Business analysis already completed. Do not call again."
+
+        ctx.deps.advisor_done = True
+
+        print("[ORCHESTRATOR] -> Business Advisor")
+
+        result = await business_advisor_agent.run(
+            request,
+            usage_limits=UsageLimits(
+                request_limit=4,
+                tool_calls_limit=1,
+            ),
+        )
+
+        return str(result.output)
+
+    orchestrator_agent = Agent(
+        model,
+        deps_type=RequestContext,
+        tools=[
+            delegate_inventory,
+            delegate_commercial,
+            delegate_customer,
+            delegate_business_analysis,
+        ],
+        instructions="""
+            You are the Orchestrator Agent for Beaver's Choice Paper Company.
+
+            Coordinate the specialized worker agents to process one customer request.
+
+            Follow this workflow strictly:
+
+            1. Call the Inventory Agent exactly once to determine fulfillment feasibility.
+            2. If the request cannot be fulfilled, stop and return a customer-facing explanation. Do not call any other agents.
+            3. If fulfillment is feasible, call the Commercial Agent exactly once to generate a quote.
+            4. Call the Customer Agent at most once to evaluate the quote.
+            5. If the customer accepts, call the Commercial Agent exactly once more to finalize the sale.
+            6. Optionally call the Business Advisor at most once after a successful sale.
+            7. Return the final customer-facing response and stop.
+
+            Never repeat a delegation because you dislike or disagree with its result.
+            Never call the same worker repeatedly looking for a different answer.
+            Never restart the workflow.
+
+            Do not expose internal cash balances, assets, margins, database details,
+            or internal business analysis to the customer.
+            """)
+
+    return {
+        "customer": customer_agent,
+        "inventory": inventory_agent,
+        "commercial": commercial_agent,
+        "business_advisor": business_advisor_agent,
+        "orchestrator": orchestrator_agent,
+    }
 
 # Run your test scenarios by writing them here. Make sure to keep track of them.
 
 def run_test_scenarios():
     
     print("Initializing Database...")
-    init_database()
+    init_database(db_engine)
     try:
         quote_requests_sample = pd.read_csv("quote_requests_sample.csv")
         quote_requests_sample["request_date"] = pd.to_datetime(
@@ -635,6 +1473,8 @@ def run_test_scenarios():
     ############
     ############
     # INITIALIZE YOUR MULTI AGENT SYSTEM HERE
+    agents = create_multi_agent_system()
+    orchestrator_agent = agents["orchestrator"]
     ############
     ############
     ############
@@ -656,6 +1496,35 @@ def run_test_scenarios():
         ############
         ############
         # USE YOUR MULTI AGENT SYSTEM TO HANDLE THE REQUEST
+        request_with_date = (
+            f"{row['request']} "
+            f"(Date of request: {request_date})"
+        )
+        required_by = extract_required_by(row['request'])
+
+        contextual_request = f"""
+        Customer role: {row['job']}
+        Order size: {row['need_size']}
+        Event: {row['event']}
+        Required delivery date: {required_by or 'not specified'}
+
+        Customer request:
+        {request_with_date}
+        """
+
+        request_context = RequestContext(
+            request_date=request_date,
+            required_by=required_by,
+        )
+
+        result = orchestrator_agent.run_sync(
+            contextual_request,
+            deps=request_context,
+            usage_limits=UsageLimits(
+                request_limit=25,
+            ),
+        )
+        response = str(result.output)
         ############
         ############
         ############

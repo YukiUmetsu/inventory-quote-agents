@@ -1,0 +1,86 @@
+request_id,request_date,cash_balance,inventory_value,response
+1,2025-04-01,45059.7,4875.3,"Your order for the following paper supplies has been successfully finalized:
+
+- **200 sheets of A4 glossy paper**
+- **100 sheets of heavy cardstock (white)**
+- **100 sheets of colored paper (assorted colors)**
+
+### Order Summary:
+- **Total Cost:** $65.00
+- **Fulfillment Date:** April 1, 2025
+
+If you have any further questions or need assistance, please let me know! Thank you for choosing Beaver's Choice Paper Company."
+2,2025-04-03,45059.7,4875.3,"I'm sorry, but we are unable to fulfill your request due to the unavailability of balloons in our product catalog. If you would like to adjust your order by removing the balloons or replacing them with another item, please let me know!"
+3,2025-04-04,45059.7,4875.3,"I'm sorry, but we cannot fulfill your order for 5,000 sheets of A3 paper as it is not available in our product catalog. We can provide the A4 and printer paper as requested, but you will need to adjust your order or find an alternative for the A3 paper. Please let us know how you would like to proceed."
+4,2025-04-05,45059.7,4875.3,"Unfortunately, I'm unable to adjust the pricing of the quote directly. The total for your order of high-quality recycled cardstock and A4 size printer paper remains at $87.50. Please let me know if you'd like to proceed with the order at this price."
+5,2025-04-05,45059.7,4875.3,"I appreciate your interest in negotiating further on the prices. However, it seems that I have reached the maximum limit for adjustable quotes at this time. 
+
+The current best offer remains as follows:
+1. **8.5""x11"" Colored Paper**: 1500 sheets for $95.00 (after the applied discounts).
+2. **Cardstock (various colors)**: 500 sheets for $67.50 (after the applied discounts).
+**Total:** $162.50.
+
+Please let me know if you would like to proceed with this order based on the current terms or if you have any additional requests!"
+6,2025-04-06,45136.7,4845.3,"Your order has been successfully finalized! Here are the details:
+
+1. **Colorful Construction Paper**
+   - Quantity: 500 sheets
+   - Total Price: $35.00
+   - Fulfillment Date: April 10, 2025
+
+2. **White Printer Paper**
+   - Quantity: 300 sheets
+   - Total Price: $12.00
+   - Fulfillment Date: April 10, 2025
+
+3. **Cardstock (various colors)**
+   - Quantity: 200 sheets
+   - Total Price: $30.00
+   - Fulfillment Date: April 6, 2025
+
+**Overall Total:** $77.00
+
+Your supplies will be delivered by April 15, 2025, in time for your assembly. If you have any further questions or need assistance with anything else, please let me know!"
+7,2025-04-07,45136.7,4845.3,"Unfortunately, we are unable to fulfill your order for various types of paper supplies due to the unavailability of matte A3 paper. Please let us know if there's anything else we can assist you with, or if you'd like to consider alternative options for your exhibition. Thank you for your understanding."
+8,2025-04-07,45136.7,4845.3,"I'm sorry, but we are unable to fulfill your order due to the unavailability of A5 colored paper in our product catalog. If you would like to modify your order or choose an alternative, please let us know!"
+9,2025-04-07,45136.7,4845.3,"I'm sorry, but we cannot fulfill your order as requested because the A3 glossy paper is not in our product catalog, and there is a shortage of the 100% recycled kraft paper envelopes. Thank you for considering us for your needs!"
+13,2025-04-08,45136.7,4845.3,"Unfortunately, we cannot fulfill your request for 500 sheets of A4 printing paper as we only have 272 sheets in stock, and they cannot be delivered by your required date of April 10, 2025. 
+
+However, we can provide the 200 sheets of cardstock you requested. If you would like to modify your order or need assistance with anything else, please let us know!"
+12,2025-04-08,45136.7,4845.3,"Unfortunately, we cannot fulfill your request as planned. We currently have 200 sheets of colorful cardstock available; however, we do not have any standard printer paper or paper napkins in stock. While we can reorder these items in time, we won't be able to provide them for your order on the desired date. 
+
+If you would like to adjust your order or consider different options, please let us know!"
+10,2025-04-08,45135.95,4801.05,"Your order has been successfully placed and finalized! Here are the details:
+
+- **High-Quality Glossy Paper**: 500 sheets
+  - **Total Price**: $100.00
+  - **Fulfillment Date**: April 12, 2025
+
+- **Sturdy Cardstock**: 300 sheets
+  - **Total Price**: $45.00
+  - **Fulfillment Date**: April 8, 2025
+
+**Overall Total**: $145.00
+
+Thank you for your order! If you need any further assistance, feel free to ask!"
+11,2025-04-08,45135.95,4801.05,"I'm sorry, but we cannot fulfill your order for 500 sheets of A3 glossy paper and 300 sheets of A4 matte paper. The A3 glossy paper is not available in our product catalog. If you have any other requests or need assistance with different products, please let us know. Thank you!"
+14,2025-04-09,45135.95,4801.05,"I regret to inform you that we are unable to fulfill your entire order for paper supplies by the requested delivery date of April 15, 2025. Specifically, we do not have sufficient stock of A4 paper and poster paper, which cannot be replenished in time. However, we can fulfill the order for cardstock, though it will arrive after a reorder on April 13, 2025. 
+
+If you would like to adjust your order or have any other requests, please let us know!"
+15,2025-04-12,45220.35,4723.65,"I'm sorry, but we are unable to fulfill your request for the paper supplies for your upcoming demonstration. Specifically, we currently have a shortage of A4 white paper and do not have A3 colored paper or cardboard for signage in our product catalog. Unfortunately, this means we cannot provide the full order, and reordering will not meet your delivery date of April 15, 2025. Thank you for your understanding."
+16,2025-04-13,45220.35,4723.65,"I'm sorry, but unfortunately, we cannot fulfill your order for the requested printing supplies by April 15, 2025. We have a shortage of A4 printer paper and colorful construction paper, which means we won't be able to deliver the complete order on time for your assembly event. If you have any other needs or would like to adjust your order, please let us know!"
+17,2025-04-14,45220.35,4723.65,"I'm sorry, but we are unable to fulfill your order for the following items:
+
+- A4 white printer paper: Not fulfillable (shortage of 728 sheets; arrival after requested date).
+- A3 colored paper: Not fulfillable (item not in catalog).
+- Table napkins: Not fulfillable (shortage of 2000; arrival after requested date).
+- Paper cups: Not fulfillable (shortage of 1000; arrival after requested date).
+
+We can only supply the 500 paper plates (biodegradable) from your request. If you would like to adjust your order or if there is anything else we can assist you with, please let us know. Thank you for your understanding."
+18,2025-04-14,45220.35,4723.65,"Unfortunately, we cannot fulfill your order as requested. Both the high-quality white cardstock and standard printing paper are currently out of stock and will not arrive by your requested delivery date of April 15, 2025. However, we do have sufficient stock of colored paper in assorted colors. 
+
+Please let us know if you would like to adjust your order or if there's anything else we can assist you with!"
+19,2025-04-15,45220.35,4723.65,"I'm sorry, but we cannot fully fulfill your order for the requested paper supplies for the exhibition. Specifically, the A4 glossy paper is unavailable in the needed quantity by the required delivery date, and the A3 matte paper is not part of our product catalog.
+
+If you have alternative products in mind or need assistance with something else, please let us know. Thank you!"
+20,2025-04-17,45220.35,4723.65,"I'm sorry, but we are unable to fulfill your request as we cannot provide the tickets. While we can supply the flyers and posters by the requested delivery date, the tickets are not available in our product catalog. Please let us know if you would like to proceed with just the flyers and posters or if you have any other requests. Thank you!"
