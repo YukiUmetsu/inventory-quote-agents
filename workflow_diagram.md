@@ -13,9 +13,9 @@ flowchart TD
 
     I["Inventory Agent<br/>Checks product support, stock,<br/>replenishment timing, and affordability"]
 
-    D1{"Order fulfillable?"}
+    D1{"Orchestrator:<br/>Can the full order be fulfilled?"}
 
-    X["Customer-Facing Response<br/>Explain why the order cannot proceed"]
+    X["Customer Response<br/>Explains why the order cannot be completed"]
 
     O2["Orchestrator Agent<br/>Routes feasible request for quoting"]
 
@@ -23,27 +23,27 @@ flowchart TD
 
     O3["Orchestrator Agent<br/>Sends quote for customer evaluation"]
 
-    U1["Customer Agent<br/>Evaluates quote and returns<br/>ACCEPT, COUNTER, or REJECT"]
+    U1["Customer Agent<br/>Evaluates the quote and returns<br/>ACCEPT, COUNTER, or REJECT"]
 
-    D2{"Customer decision"}
+    D2{"Orchestrator:<br/>What did the customer decide?"}
 
     O4["Orchestrator Agent<br/>Routes accepted quote for fulfillment"]
 
-    C2["Commercial Agent - Sale Mode<br/>Finalizes accepted order<br/>and records the sale"]
+    C2["Commercial Agent - Sale Mode<br/>Finalizes the accepted order<br/>and records the sale"]
 
-    O6["Orchestrator Agent<br/>Receives fulfillment result<br/>and completes the workflow"]
+    O6["Orchestrator Agent<br/>Checks the fulfillment result<br/>and prepares the final response"]
 
-    S["Customer-Facing Response<br/>Order confirmation + delivery information"]
+    S["Customer Response<br/>Confirms the order and delivery details"]
 
     O5["Orchestrator Agent<br/>Routes counteroffer for one revised quote"]
 
-    C3["Commercial Agent - Quote Mode<br/>Generates revised quote<br/>using counteroffer context"]
+    C3["Commercial Agent - Quote Mode<br/>Generates a revised quote<br/>using the counteroffer context"]
 
-    U2["Customer Agent<br/>Performs final evaluation<br/>ACCEPT or REJECT"]
+    U2["Customer Agent<br/>Evaluates the revised quote<br/>and returns ACCEPT or REJECT"]
 
-    D3{"Final decision"}
+    D3{"Orchestrator:<br/>What is the final decision?"}
 
-    B["Business Advisor Agent<br/>Reviews completed transactions and<br/>provides internal recommendations"]
+    B["Business Advisor Agent<br/>Reviews the completed sale and<br/>suggests operational improvements"]
 
     R --> O1
 
