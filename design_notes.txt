@@ -15,11 +15,11 @@ I chose this architecture because each agent has a distinct responsibility. The 
 The typical workflow is:
 
 Customer Request
-→ Inventory Agent
-→ Commercial Agent for quote
-→ Customer Agent
-→ Commercial Agent for sale if accepted
-→ optional Business Advisor analysis
+- Inventory Agent
+- Commercial Agent for quote
+- Customer Agent
+- Commercial Agent for sale if accepted
+- optional Business Advisor analysis
 
 If the Inventory Agent determines that the complete order cannot be fulfilled, the workflow stops before quoting or creating transactions.
 
