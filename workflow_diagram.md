@@ -79,6 +79,8 @@ flowchart TD
     D3 -->|"ACCEPT"| O4
 ```
 
+The Orchestrator, Commercial Agent, and Customer Agent appear more than once to show different stages of the workflow. There are five agents in total.
+
 ---
 
 ## 2. Agent Tools and Starter Helpers
@@ -99,7 +101,7 @@ flowchart TB
 
         OT["Delegation tools<br/><br/>delegate_inventory()<br/>delegate_commercial()<br/>delegate_customer()<br/>delegate_business_analysis()<br/><br/>Purpose:<br/>Send tasks to the appropriate worker agent"]
 
-        OH["Starter helpers<br/><br/>None<br/><br/>These tools perform agent delegation only"]
+        OH["Starter helpers<br/><br/>None<br/><br/>These tools only delegate work to other agents"]
 
         O -->|"Input: request + task<br/>Output: worker-agent response"| OT
         OT -->|"Uses"| OH
