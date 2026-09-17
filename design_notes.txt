@@ -68,8 +68,6 @@ Quote prices are also deterministic. The Commercial Agent uses catalog prices, a
 
 The shared request state also prevents duplicate work. Inventory is checked once per request, a sale can only be finalized after the quote is accepted, and the sale uses the quantities and prices saved from that quote. 
 
-Inventory assessment is performed once per request, sales can only be finalized after an accepted quote, and the accepted quote is stored in shared state so the sale uses the original quoted quantities and prices.
-
 Customer-facing responses generally explain why an order succeeds or fails without exposing internal cash balances, profit information, database details, or transaction IDs.
 
 The Customer Agent also adds a negotiation step based on the customer's request context, which makes the workflow more realistic than automatically accepting every generated quote.
