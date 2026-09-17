@@ -1,174 +1,158 @@
 request_id,request_date,cash_balance,cash_before,cash_after,cash_change,inventory_value,fulfilled,quote_rounds,customer_rounds,response
-1,2025-04-01,45121.45,45059.7,45121.45,61.75,4875.3,True,1,1,"Your order has been successfully processed! Here are the details:
+1,2025-04-01,45121.45,45059.7,45121.45,61.75,4875.3,True,1,1,"Your order has been successfully completed with the following details:
 
-### Purchased Items:
-- **200 sheets of A4 glossy paper**
-- **100 sheets of heavy cardstock (white)**
-- **100 sheets of colored paper (assorted colors)**
+- **Glossy Paper**
+  - Quantity: 200 sheets
+  - Line Total: $38.00
 
-### Accepted Prices:
-- Total for A4 glossy paper: $38.00  
-- Total for heavy cardstock (white): $14.25  
-- Total for colored paper (assorted colors): $9.50  
+- **Heavy Cardstock (White)**
+  - Quantity: 100 sheets
+  - Line Total: $14.25
 
-### Final Order Total: $61.75  
+- **Colored Paper (Assorted Colors)**
+  - Quantity: 100 sheets
+  - Line Total: $9.50
 
-### Delivery Information:
-All items will be delivered by **April 1, 2025**.
+### Order Summary:
+- **Final Order Total**: $61.75
 
-Thank you for your order! If you have any further questions or need assistance, feel free to reach out."
-2,2025-04-03,45121.45,45121.45,45121.45,0.0,4875.3,False,0,0,"Unfortunately, we cannot fulfill your entire order for the parade supplies. Here's the breakdown:
+All items will be delivered by April 15, 2025, as requested. Thank you for choosing Beaver's Choice Paper Company!"
+2,2025-04-03,45121.45,45121.45,45121.45,0.0,4875.3,False,0,0,"We appreciate your interest in placing an order with Beaver's Choice Paper Company. However, upon evaluating your request, we've found that we cannot fulfill your entire order as it includes balloons, which are not part of our product catalog.
 
-- **Colorful Poster Paper**: 500 sheets available (fulfillable).
-- **Streamers**: We are short of 300 rolls; expected delivery is April 7, 2025.
-- **Balloons**: Not available in our product catalog.
+We can supply the colorful poster paper and streamers you need by the required delivery date of April 15, 2025, but unfortunately, we will not be able to include the balloons. If you would like to proceed with an order excluding the balloons or need assistance finding an alternative product, please let us know. Thank you for understanding."
+3,2025-04-04,45121.45,45121.45,45121.45,0.0,4875.3,False,0,0,"Unfortunately, we cannot fulfill your order as requested. While we can replenish the needed A4 sheets and printer paper before your required delivery date, we are unable to supply A3 sheets, as they are not part of our product catalog. 
 
-Since we cannot provide the streamers and balloons as requested, we won't be able to proceed with your order. If you would like to adjust your order or if there’s anything else we can assist you with, please let us know! Thank you."
-3,2025-04-04,45121.45,45121.45,45121.45,0.0,4875.3,False,0,0,"Unfortunately, we are unable to fulfill your order as requested. Specifically, A3 paper is not available in our product catalog, and thus cannot be supplied for your upcoming conference. Additionally, although other items have stock replenishment options, the overall order cannot be completed without A3 paper. 
-
-Please let us know if you would like to adjust your order or if there’s anything else we can assist you with."
+Please let us know if there is anything else we can assist you with or if you would like to adjust your order."
 4,2025-04-05,45202.07,45121.45,45202.07,80.62,4788.55,True,1,1,"Your order has been successfully completed! Here are the details:
 
-**Purchased Items:**
-1. **500 sheets of high-quality recycled cardstock**  
-   - Sale Price: $69.75  
+1. **High-Quality Recycled Cardstock**
+   - Quantity: 500 sheets
+   - Accepted Price: $69.75
 
-2. **250 sheets of A4 size printer paper**  
-   - Sale Price: $11.62  
+2. **A4 Size Printer Paper**
+   - Quantity: 250 sheets
+   - Accepted Price: $11.62
 
-**Total Order Amount:** $81.37  
+**Final Order Total: $81.37** (after a bulk discount of 7%)
 
-**Delivery Date:** April 15, 2025
+The entire order will be delivered by April 5, 2025, well ahead of your requested date. Thank you for choosing Beaver's Choice Paper Company, and we wish you a successful reception event!"
+5,2025-04-05,45238.57,45202.07,45238.57,36.5,4738.55,True,1,1,"Your order has been successfully placed and confirmed for delivery. Here are the details:
 
-Thank you for choosing Beaver's Choice Paper Company! If you have any further questions or need assistance, feel free to reach out."
-5,2025-04-05,45202.07,45202.07,45202.07,0.0,4788.55,False,0,0,"Unfortunately, we are unable to fulfill your entire order as requested. While we can supply the 500 sheets of 8.5""x11"" colored paper, we currently do not have the cardstock and decorative washi tape in stock. However, both items can be reordered, and we expect them to arrive on April 9, 2025, ahead of your required delivery date of April 15, 2025.
+- **500 sheets of 8.5""x11"" Colored Paper**: $45.00
+- **300 sheets of Cardstock in Various Colors**: $40.50
+- **200 rolls of Decorative Washi Tape**: $36.00
 
-Should I proceed with providing a quote for the available items, including an estimated cost for the reordered items?"
-6,2025-04-06,45194.369999999995,45202.07,45194.37,-7.7,4788.55,True,1,1,"Your order has been successfully completed! Here are the details:
+**Final Order Total: $121.50**
 
-### Purchased Items:
-- **Colorful Construction Paper**: 500 sheets
-- **White Printer Paper**: 300 sheets
-- **Cardstock in Various Colors**: 200 sheets
+All items will be delivered by April 9, 2025, ahead of your required date for the party. Thank you for choosing Beaver's Choice Paper Company! If you need further assistance, feel free to reach out. Enjoy your event!"
+6,2025-04-06,45230.87,45238.57,45230.87,-7.7,4738.55,True,1,1,"Your order has been successfully processed. Here are the confirmed details:
 
-### Financial Summary:
-- **Accepted Prices**:
-  - Colorful Construction Paper: $31.50
-  - White Printer Paper: $10.80
-  - Cardstock: $27.00
-- **Total Amount**: $69.30
+**Items Ordered:**
+- **Construction Paper**
+  - Quantity: 500 sheets
+  - Price: $31.50
+- **White Printer Paper**
+  - Quantity: 300 sheets
+  - Price: $10.80
+- **Cardstock in Various Colors**
+  - Quantity: 200 sheets
+  - Price: $27.00
 
-### Delivery Information:
-- **Fulfillment Date**: April 10, 2025
-- **Delivery Date**: April 15, 2025
+**Total Amount:** $69.30
 
-Thank you for choosing Beaver's Choice Paper Company! If you need anything else, feel free to reach out."
-7,2025-04-07,45194.369999999995,45194.37,45194.37,0.0,4788.55,False,0,0,"I'm sorry, but we cannot fulfill your order as requested. The matte A3 paper is not supported and cannot be provided. If you have alternative items or specifications you'd like to consider, please let me know!"
-8,2025-04-07,45194.369999999995,45194.37,45194.37,0.0,4788.55,False,0,0,"I'm sorry, but we cannot fulfill your order at this time due to inventory constraints. Specifically:
+**Delivery Information:**
+The items will be delivered to you by April 10, 2025, well in time for your assembly on April 15, 2025.
 
-- **A4 glossy paper**: We can fulfill this item (500 sheets).
-- **A4 matte paper**: We cannot fulfill this item (1000 sheets needed, currently out of stock).
-- **A5 colored paper**: This item is not supported in our catalog.
-- **A4 recycled paper**: We cannot fulfill this item (3000 sheets needed, currently out of stock).
+Thank you for choosing Beaver's Choice Paper Company!"
+7,2025-04-07,45230.87,45230.87,45230.87,0.0,4738.55,False,0,0,"Unfortunately, we cannot fulfill your order because one of the items you requested, matte A3 paper, is not available in our product catalog. If you would like assistance in adjusting your order, perhaps by selecting from other available paper types, please let us know. We are here to help ensure you have the supplies you need for your exhibition. Thank you for considering us for your paper supply needs!"
+8,2025-04-07,45230.87,45230.87,45230.87,0.0,4738.55,False,0,0,"We're unable to fully fulfill your request due to an unsupported product in your order: A5 colored paper. Unfortunately, this item does not exist in our product catalog and cannot be ordered.
 
-If there's anything else you'd like to consider or modify in your order, please let us know!"
-9,2025-04-07,45194.369999999995,45194.37,45194.37,0.0,4788.55,False,0,0,"I’m sorry, but we cannot fulfill your entire order for the requested paper supplies. Here’s a summary of the situation:
+Please feel free to adjust your order or make any necessary changes, and we'd be happy to assist you further.
 
-1. **A4 white printer paper**: We currently have only 22 sheets in stock, which is 178 sheets short of your request. Unfortunately, we can expect a reorder to arrive only after your required delivery date (April 11, 2025).
+Thank you for considering Beaver's Choice Paper Company for your needs."
+9,2025-04-07,45230.87,45230.87,45230.87,0.0,4738.55,False,0,0,"I'm sorry, but we're unable to fulfill your request due to the following reasons:
+
+1. **A4 White Printer Paper**: We won't be able to deliver this item by your requested date of April 10, 2025, since our stock replenishment isn't expected until April 11, 2025.
+
+2. **A3 Glossy Paper**: Unfortunately, we do not have this item in our product catalog, so it's not available for order.
+
+However, the **100% Recycled Kraft Paper Envelopes** can be delivered on time. If you'd like to place an order for just the envelopes or make any adjustments to the other items requested, please let us know. Thank you for considering Beaver's Choice Paper Company."
+13,2025-04-08,45230.87,45230.87,45230.87,0.0,4738.55,False,0,0,"Unfortunately, we are unable to fulfill your order for 500 sheets of A4 printing paper and 200 sheets of cardstock by the requested delivery date of April 10, 2025. 
+
+Our current stock and supplier schedules mean that the earliest delivery for these items would be April 12, 2025. We apologize for any inconvenience this may cause and hope to assist with your future needs. Thank you for considering Beaver's Choice Paper Company for your gathering supplies."
+12,2025-04-08,45227.23,45230.87,45227.23,-3.64,4738.55,True,1,1,"Thank you for your order! Here's a summary of what's been arranged for your party needs:
+
+- **200 sheets of Colorful Cardstock**: $27.90 (will arrive by April 12, 2025)
+- **500 sheets of Standard Printer Paper**: $18.60 (will arrive by April 12, 2025)
+- **100 Paper Napkins**: $1.86 (will arrive by April 9, 2025)
+
+You’re all set, and everything will be delivered before your party date of April 15, 2025. The total cost for the entire order is **$48.36**. If you have any more needs or questions, feel free to reach out. Enjoy your event!"
+10,2025-04-08,45294.48,45227.23,45294.48,67.25,4661.15,True,2,2,"Thank you for your order! Here are the confirmed details:
+
+- **Glossy Paper**
+  - Quantity: 500 sheets
+  - Line Total: $93.00
+
+- **Cardstock**
+  - Quantity: 300 sheets
+  - Line Total: $41.85
+
+- **Final Order Total:** $134.85 (including a 7% bulk discount)
+
+**Delivery Information:** Your order will be delivered by April 12, 2025, ensuring it arrives in time for your upcoming show.
+
+We appreciate your business and look forward to serving you again!"
+11,2025-04-08,45294.48,45294.48,45294.48,0.0,4661.15,False,0,0,"Thank you for your interest in our products. Unfortunately, we cannot fulfill your entire order at this time. 
+
+- **A3 Glossy Paper**: This item is not in our product catalog and cannot be supplied.
+- **A4 Matte Paper**: We can fulfill your request. The 300 sheets can be replenished and ready for delivery by April 15, 2025.
+
+Please let us know if you would like to proceed with the available item or adjust your order."
+14,2025-04-09,45294.48,45294.48,45294.48,0.0,4661.15,False,0,0,"We're unable to fulfill your full order by the desired delivery date of April 15, 2025. Here's the situation:
+
+- **A4 Paper**: We lack the necessary quantity, and replenishment will arrive a day late on April 16, 2025.
+- **Poster Paper**: Similarly, this will also be restocked only by April 16, missing the deadline.
+- **Cardstock**: We can fulfill this portion of your order, as supplies will arrive on April 13, 2025.
+
+Unfortunately, due to these constraints, we cannot proceed with the order for all items by the specified date. Please let us know if there's flexibility around the deadline or if you wish to proceed with the cardstock portion only."
+15,2025-04-12,45294.48,45294.48,45294.48,0.0,4661.15,False,0,0,"I'm sorry, but we are unable to fulfill your order for the requested paper supplies by April 15, 2025. Here are the reasons:
+
+1. **A4 White Paper**: We currently lack sufficient stock, and additional stock won't arrive until after your required delivery date.
+2. **A3 Colored Paper**: Unfortunately, this item isn't available in our catalog.
+3. **Cardboard for Signage**: This item isn't offered in our catalog either.
+
+Please let us know if there's anything else we can assist you with, or if you have an alternative request."
+16,2025-04-13,45294.48,45294.48,45294.48,0.0,4661.15,False,0,0,"I'm sorry, but we are unable to fulfill your order for 500 sheets of A4 printer paper, 200 sheets of colorful construction paper, and 100 sheets of poster board by the required delivery date of April 15, 2025. While we have sufficient stock for the poster board, the A4 printer paper and colorful construction paper will not arrive until after your event.
+
+If you have any flexibility with either the required delivery date or the types of paper, please let us know, and we will do our best to accommodate your needs!"
+17,2025-04-14,45294.48,45294.48,45294.48,0.0,4661.15,False,0,0,"I'm sorry, but we're unable to fulfill your order for the upcoming reception by April 15, 2025, due to several items being out of stock or only available after your required date:
+
+- The A4 white printer paper, table napkins, and biodegradable paper cups are not available for delivery until after your needed date.
+- We currently do not support A3 colored paper in our product catalog.
+- The biodegradable paper plates are in stock, but as a composite order, it cannot be completed.
+
+Please let us know if there are any adjustments or alternative dates we can consider for you. Thank you for understanding."
+18,2025-04-14,45294.48,45294.48,45294.48,0.0,4661.15,False,0,0,"I'm sorry, but we cannot fulfill your request for the full order of paper supplies by April 15, 2025. Our current stock is insufficient, and replenishments for the majority of the items will arrive after your required delivery date. If you have any flexibility with your delivery deadline or would like to explore alternative options, please let us know. Thank you for understanding."
+19,2025-04-15,45294.48,45294.48,45294.48,0.0,4661.15,False,0,0,"Dear City Hall Clerk,
+
+Thank you for your interest in our paper supplies for your upcoming exhibition. Unfortunately, we are unable to fulfill your order by the requested delivery date of April 20, 2025, due to the following reasons:
+
+1. **A4 Glossy Paper:** We currently have no stock, and the replenishment will not arrive until April 22, 2025, unfortunately after your required date.
    
-2. **A3 glossy paper**: This product is not supported and is not available in our catalog.
-   
-3. **100% recycled kraft paper envelopes**: We do not have any stock available, but we can reorder and receive these by April 8, 2025.
+2. **A3 Matte Paper:** This item is unsupported and is not available in our product catalog.
 
-As a result, we cannot fulfill your order as requested. If you would like to adjust your order or choose alternative products, please let us know. Thank you!"
-13,2025-04-08,45194.369999999995,45194.37,45194.37,0.0,4788.55,False,0,0,"I regret to inform you that we cannot fulfill your order for 500 sheets of A4 printing paper and 200 sheets of cardstock by the requested delivery date of April 10, 2025. Unfortunately, we only have 22 sheets of A4 printing paper in stock, and the cardstock is completely out of stock. Both items are expected to arrive after your event date. 
+3. **Cardstock in Assorted Colors:** Although this item can be fulfilled with stock arriving on April 19, 2025, the overall order cannot be completed as requested due to issues with the first two items.
 
-If there's anything else we can assist you with or alternative products you might consider, please let us know."
-12,2025-04-08,45190.729999999996,45194.37,45190.73,-3.64,4788.55,True,1,1,"Your order has been successfully processed! Here are the details:
+Please let us know if you would like to make any adjustments to your order or if there is a way we can assist you with alternative products or arrangements.
 
-**Purchased Items:**
-- **200 sheets of colorful cardstock**
-- **500 sheets of standard printer paper**
-- **100 paper napkins**
+Thank you for considering our services.
 
-**Accepted Prices:**
-- Colorful cardstock: $27.90
-- Standard printer paper: $18.60
-- Paper napkins: $1.86
+Best regards,
 
-**Final Order Total:** $48.36
-
-**Delivery Information:** All items will be delivered by April 15, 2025.
-
-Thank you for choosing Beaver's Choice Paper Company for your event! If you need any further assistance, feel free to ask."
-10,2025-04-08,45257.979999999996,45190.73,45257.98,67.25,4711.15,True,1,1,"Your order has been successfully placed! Here are the details:
-
-### Purchased Items:
-1. **High-Quality Glossy Paper**
-   - **Quantity:** 500 sheets
-   - **Sale Price:** $93.00
-
-2. **Sturdy Cardstock**
-   - **Quantity:** 300 sheets
-   - **Sale Price:** $41.85
-
-### Final Order Total:
-- **Total:** $134.85
-
-### Delivery Information:
-- **Expected Fulfillment Date:** April 12, 2025
-
-If you have any further questions or need assistance, please let me know!"
-11,2025-04-08,45257.979999999996,45257.98,45257.98,0.0,4711.15,False,0,0,"We cannot fulfill your order because the A3 glossy paper is not available in our product catalog. Only the A4 matte paper is short but can be replenished by your requested delivery date of April 15, 2025. Unfortunately, we can't proceed with an incomplete order. If you have any alternative requests or need further assistance, please let us know. Thank you!"
-14,2025-04-09,45257.979999999996,45257.98,45257.98,0.0,4711.15,False,0,0,"I regret to inform you that we are unable to fulfill your order for high-quality paper supplies for your upcoming performance by the requested delivery date of April 15, 2025. 
-
-The inventory status is as follows:
-- A4 Paper: 5,000 sheets requested, but only 22 sheets are available.
-- Poster Paper: 2,000 sheets requested, but no stock is currently available.
-- Cardstock: 500 sheets requested, but no stock is available, though we can replenish it on April 13, 2025.
-
-Since we cannot meet the entire order's requirements, we cannot proceed with your request at this time. If there's anything else I can assist you with, please let me know!"
-15,2025-04-12,45257.979999999996,45257.98,45257.98,0.0,4711.15,False,0,0,"Unfortunately, we cannot fulfill your order for the high-quality paper supplies for the upcoming demonstration. 
-
-Here's the summary of the issues:
-- We currently have a shortage of A4 white paper (only 22 sheets available).
-- The A3 colored paper is not in our product catalog.
-- The cardboard for signage is also not available in our product catalog.
-
-If you have alternative requests or if there's something else we can assist you with, please let us know. Thank you!"
-16,2025-04-13,45257.979999999996,45257.98,45257.98,0.0,4711.15,False,0,0,"Unfortunately, we are unable to fulfill your entire order for the requested supplies by April 15, 2025. Here’s the breakdown:
-
-- **A4 printer paper**: 500 sheets requested; only 22 sheets available, resulting in a shortage of 478 sheets.
-- **Colorful construction paper**: 200 sheets requested; currently out of stock.
-- **Poster board**: 100 sheets requested; we have sufficient stock available (699 sheets).
-
-As the complete order cannot be fulfilled, we recommend considering an alternative request. If you need assistance with choosing different products or quantities, please let us know!"
-17,2025-04-14,45257.979999999996,45257.98,45257.98,0.0,4711.15,False,0,0,"I'm sorry, but we cannot fulfill your order for the reception due to stock shortages and unsupported items. Specifically:
-
-- We have a shortage of 978 sheets of A4 white printer paper.
-- We do not support A3 colored paper in our catalog.
-- We are short 2000 table napkins.
-- We are short 1000 biodegradable paper cups.
-- We can fully fulfill the paper plates, but it's not enough to complete the order.
-
-If you would like to adjust your order or have any other requests, please let me know!"
-18,2025-04-14,45257.979999999996,45257.98,45257.98,0.0,4711.15,False,0,0,"Unfortunately, we cannot fulfill your order for the requested paper supplies in full. The high-quality white cardstock and standard printing paper are both in short supply, and we won't be able to deliver them by your requested date of April 15, 2025. 
-
-Currently, we can only supply the 200 sheets of colored paper in assorted colors. If you would like to adjust your order or consider alternative options, please let us know."
-19,2025-04-15,45257.979999999996,45257.98,45257.98,0.0,4711.15,False,0,0,"Dear City Hall Clerk,
-
-Thank you for your order request. Unfortunately, we cannot fulfill the complete order due to the following reasons:
-
-- **A4 glossy paper**: 2000 sheets needed, but currently out of stock, with no reorder available before your requested date of April 20, 2025.
-- **A3 matte paper**: This item is not available in our product catalog.
-- **Cardstock in assorted colors**: While we can fulfill this item, it will only arrive by April 19, 2025, which may not align with your needs.
-
-As we are unable to provide the complete order, we cannot proceed with fulfilling your request.
-
-Thank you for your understanding. If you have any other requests or need further assistance, please let us know. 
-
-Best regards,  
 Beaver's Choice Paper Company"
-20,2025-04-17,45257.979999999996,45257.98,45257.98,0.0,4711.15,False,0,0,"We regret to inform you that we cannot fulfill your complete order for the upcoming concert as the requested tickets are not available in our product catalog. However, we can provide 5,000 flyers and 2,000 posters.
+20,2025-04-17,45294.48,45294.48,45294.48,0.0,4661.15,False,0,0,"I'm sorry, but we are unable to fulfill your order due to the following reasons: 
 
-If you would like to proceed with just the flyers and posters, please let us know!"
+- We can supply the 5,000 flyers and 2,000 posters as they will be restocked and ready for delivery by the required date.
+- However, the 10,000 tickets are not available in our product catalog and cannot be supplied.
+
+Please let us know if you would like to proceed with the available items or adjust your order."

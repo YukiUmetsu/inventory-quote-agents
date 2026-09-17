@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Union
 import dotenv
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext, UsageLimits
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -837,6 +838,10 @@ class RequestContext:
     quoted_total: float = 0.0
     fulfilled_items: List[str] = field(default_factory=list)
 
+class RequestedItem(BaseModel):
+    item_name: str
+    quantity: int
+
 def check_inventory(
     ctx: RunContext[RequestContext],
     item_name: str,
@@ -860,6 +865,7 @@ def check_inventory(
         return {
             "item_name": item_name,
             "supported": False,
+            "inventory_status": "UNSUPPORTED",
             "fulfillable": False,
             "reason": "The requested item is not in our product catalog.",
         }
@@ -877,10 +883,10 @@ def check_inventory(
             "original_item_name": item_name,
             "item_name": canonical_name,
             "supported": True,
-            "current_stock": current_stock,
             "requested_quantity": quantity,
+            "current_stock": current_stock,
             "shortage": 0,
-            "reorder_required": False,
+            "inventory_status": "IN_STOCK",
             "fulfillable": True,
             "reason": "Enough inventory is currently available.",
         }
@@ -901,13 +907,16 @@ def check_inventory(
     )
 
     if not arrives_on_time:
+        inventory_status = "LATE_REPLENISHMENT"
         reason = (
             "The required additional stock cannot arrive before "
             "the requested delivery date."
         )
     elif not can_afford:
+        inventory_status = "INSUFFICIENT_CASH"
         reason = "The required inventory replenishment cannot be funded."
     else:
+        inventory_status = "REPLENISHABLE"
         reason = (
             "Current inventory is insufficient, but the shortage "
             "can be replenished in time."
@@ -918,6 +927,8 @@ def check_inventory(
         "item_name": canonical_name,
         "supported": True,
         "current_stock": current_stock,
+        "inventory_status": inventory_status,
+        "replenishment_quantity": shortage,
         "requested_quantity": quantity,
         "shortage": shortage,
         "reorder_required": True,
@@ -931,7 +942,7 @@ def check_inventory(
 
 def check_inventory_batch(
     ctx: RunContext[RequestContext],
-    items: List[Dict],
+    items: List[RequestedItem],
 ) -> Dict:
     """
     Check inventory feasibility for all requested items in one tool call.
@@ -952,17 +963,24 @@ def check_inventory_batch(
     for item in items:
         result = check_inventory(
             ctx,
-            item_name=item["item_name"],
-            quantity=int(item["quantity"]),
+            item_name=item.item_name,
+            quantity=item.quantity,
         )
         results.append(result)
 
+    all_fulfillable = all(
+        item.get("fulfillable", False)
+        for item in results
+    )
+
     return {
-        "items": to_json_safe(results),
-        "all_fulfillable": all(
-            item.get("fulfillable", False)
-            for item in results
+        "status": (
+            "FULFILLABLE"
+            if all_fulfillable
+            else "NOT_FULFILLABLE"
         ),
+        "items": to_json_safe(results),
+        "all_fulfillable": all_fulfillable,
     }
 
 def reorder_inventory(
@@ -1053,7 +1071,7 @@ def search_historical_quotes(
 
 def calculate_quote(
     ctx: RunContext[RequestContext],
-    items: List[Dict],
+    items: List[RequestedItem],
     search_terms: List[str],
 ) -> Dict:
     """
@@ -1072,15 +1090,15 @@ def calculate_quote(
     total_quantity = 0
 
     for requested_item in items:
-        item = get_catalog_item(requested_item["item_name"])
+        item = get_catalog_item(requested_item.item_name)
 
         if not item.get("supported", True):
             return {
                 "success": False,
-                "reason": f"Unsupported item: {requested_item['item_name']}",
+                "reason": f"Unsupported item: {requested_item.item_name}",
             }
 
-        quantity = int(requested_item["quantity"])
+        quantity = int(requested_item.quantity)
         line_subtotal = round(
             item["unit_price"] * quantity,
             2,
@@ -1362,9 +1380,23 @@ def create_multi_agent_system():
 
             1. Call check_inventory_batch exactly once with all requested items.
             2. Use the returned results to determine fulfillment feasibility.
+               IMPORTANT:
+                - The `all_fulfillable` value returned by check_inventory_batch is authoritative.
+                - A shortage or zero current stock does NOT mean the order is unfulfillable.
+                - If missing inventory can be reordered before the required delivery date
+                and the reorder can be afforded, that item IS fulfillable.
+                - If `all_fulfillable` is true, your response MUST begin with:
+                INVENTORY_STATUS: FULFILLABLE
+                - If `all_fulfillable` is false, your response MUST begin with:
+                INVENTORY_STATUS: NOT_FULFILLABLE
             3. Return a concise inventory assessment immediately.
             4. Do not call another tool after check_inventory_batch.
             5. Do not repeat the inventory assessment.
+
+            When explaining a shortage:
+            - If current stock plus the replenishment quantity equals the requested quantity
+            and the replenishment arrives before the deadline, describe that item as fulfillable.
+            - Do not say a replenishment is insufficient when it exactly covers the shortage.
 
             Do not purchase inventory.
             Do not create transactions.
@@ -1399,6 +1431,30 @@ def create_multi_agent_system():
             - Use the exact quoted quantities.
             - Do not invent or modify prices.
             - If any fulfillment tool fails, report the failure honestly.
+
+            When presenting accepted prices:
+
+            - Report the accepted line total for each item.
+            - Do NOT report a per-unit price.
+            - The catalog unit price is a pre-discount price and must not be
+            described as the accepted unit price.
+            - Copy accepted line totals from calculate_quote exactly.
+            - For every successful order, list each item's:
+                * item name
+                * quantity
+                * accepted line total
+            - Then show the final order total and delivery information.
+            - Never omit individual accepted line totals.
+
+            DELIVERY DATE RULES:
+            - For each fulfilled item, use the `fulfillment_date` returned by
+            fulfill_order_item.
+            - Never use the request date as a delivery or fulfillment date unless
+            fulfill_order_item explicitly returned that same date.
+            - For a multi-item order, the order-level delivery/ready date is the
+            LATEST fulfillment_date returned by any fulfilled item.
+            - Copy that date exactly.
+            - Do not infer, estimate, or invent delivery dates.
 
             Never include transaction IDs in your response.
             Never expose database IDs, tool names, internal function results,
@@ -1612,9 +1668,16 @@ def create_multi_agent_system():
             Follow this workflow strictly:
             1. Call the Inventory Agent exactly once.
             2. Treat the Inventory Agent's feasibility result as authoritative. Do not reinterpret stock quantities or supplier dates.
-            3. If the complete order cannot be fulfilled:
-            return a customer-facing explanation and stop.
-            4. If fulfillment is feasible: call the Commercial Agent with task="quote".
+            3. If the Inventory Agent returns:
+                INVENTORY_STATUS: NOT_FULFILLABLE
+                return a customer-facing explanation and stop.
+            4. If the Inventory Agent returns:
+                INVENTORY_STATUS: FULFILLABLE
+                continue to the Commercial Agent with task="quote".
+                IMPORTANT:
+                A current inventory shortage is NOT a reason to stop when the
+                Inventory Agent determines that replenishment can arrive before
+                the required delivery date.
             5. Send that quote to the Customer Agent.
             6. If the Customer Agent responds ACCEPT: call the Commercial Agent with task="sale".
             7. If the Customer Agent responds COUNTER: 
