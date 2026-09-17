@@ -23,9 +23,21 @@ Customer Request
 
 If the Inventory Agent determines that the complete order cannot be fulfilled, the workflow stops before quoting or creating transactions.
 
-I also used shared request state to track information such as the request date, delivery deadline, quote rounds, customer negotiation rounds, quoted items, and whether a sale was completed. This helps prevent repeated operations and allows the final sale to use the authoritative quote rather than allowing the language model to invent prices.
+I also used shared request state to track information such as the request date, delivery deadline, quote rounds, customer negotiation rounds, quoted items, and whether a sale was completed.
+This helps prevent repeated operations and allows the final sale to use the authoritative quote rather than allowing the language model to invent prices.
 
-The agent tools combine the starter helper functions with business rules. For example, inventory checks use stock levels, supplier delivery dates, and available cash, while quote generation applies a deterministic bulk-discount policy and consults historical quote data when available.
+The agent tools combine the starter helper functions with business rules.
+I kept the tools specific to each agent instead of giving every agent access to every helper function.
+The Inventory Agent only has tools for checking whether an order can be fulfilled, while the Commercial Agent handles quoting and sales.
+The Business Advisor can read financial and inventory information, but it does not create transactions.
+The Customer Agent does not need business tools because its job is only to evaluate the quote.
+The Orchestrator's tools are limited to delegating work to the other agents.
+
+I chose PydanticAI because it let me define the agents and their tools using normal typed Python functions without adding much framework-specific structure.
+RunContext also gave me a straightforward way to pass request state to the agents that need it, and UsageLimits let me put limits on how many model requests each agent can make.
+This fit the project well because I wanted the LLMs to handle interpretation and coordination while keeping inventory, pricing, and transaction logic in regular Python code.
+
+For example, inventory checks use stock levels, supplier delivery dates, and available cash, while quote generation applies a deterministic bulk-discount policy and consults historical quote data when available.
 
 
 ## Evaluation Results
