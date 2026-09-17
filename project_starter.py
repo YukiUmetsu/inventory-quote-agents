@@ -990,7 +990,8 @@ def reorder_inventory(
 ) -> Dict:
     """
     Replenish inventory when enough cash is available.
-    The stock transaction is dated when the supplier delivers it.
+    The stock order transaction is recorded on the order date.
+    The expected supplier arrival date is returned separately.
     Args:
         item_name: The name of the item to reorder.
         quantity: The quantity of the item to reorder.
