@@ -1,5 +1,16 @@
 # Munder Difflin Multi-Agent System Project
 
+## Submission Files
+
+The required project submission files are available below:
+
+- [Multi-Agent System Implementation](./project_starter.py)
+- [Workflow Diagram](./workflow_diagram.md)
+- [Design Notes and Reflection](./design_notes.txt)
+- [Test Results](./test_results.csv)
+
+## Multi-Agent System Project 
+
 Welcome to the starter code repository for the **Munder Difflin Paper Company Multi-Agent System Project**! This repository contains the starter code and tools you will need to design, build, and test a multi-agent system that supports core business operations at a fictional paper manufacturing company.
 
 ## Project Context
